@@ -1,14 +1,11 @@
 #ifndef GAME_LOGIC_HPP
 #define GAME_LOGIC_HPP
 
-
 #include <cstdlib>
 #include <string>
 #include <vector>
 #include <ctime>
 #include <unordered_map>
-
-
 
 // Define Direction enum class
 enum class Direction { up, down, left, right };
@@ -123,11 +120,6 @@ void flag_adjacent_cells(std::vector<std::vector<Cell>> &board, int row,
  */
 bool field_clear(std::vector<std::vector<Cell>> &board); 
 using KeyMap = std::unordered_map<Direction, int>;
-
-
-
-
-
 
 
 #endif //GAME_LOGIC_HPP
