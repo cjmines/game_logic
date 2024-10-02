@@ -10,23 +10,21 @@
 #include <random>
 
 void print_board(std::vector<std::vector<Cell>> &board);
+void print_board_x_ray(std::vector<std::vector<Cell>> &board);
 
 class Solver {
-public:
-
+  public:
     /**
      * @brief Starts the solving process.
-     * 
+     *
      * @return True if the board is no-guess solvable, false otherwise.
      */
-    std::optional<std::pair<int, int>> solve(std::vector<std::vector<Cell>>& board, int mine_count);
+    std::optional<std::pair<int, int>> solve(std::vector<std::vector<Cell>> &board, int mine_count);
 
-
-private:
-
+  private:
     /**
      * @brief Generates linear equations for the current board state.
-     * 
+     *
      * @return Set of linear equations representing the system.
      */
 
@@ -34,18 +32,17 @@ private:
 
     /**
      * @brief Updates the board based on the deduced variable values.
-     * 
+     *
      * @param deduced_vars Map of variable indices to their deduced values.
      */
     void update_board(std::vector<std::vector<Cell>> &board, const std::unordered_map<int, int> &deduced_vars);
 
     /**
      * @brief Checks if the current state of the board is solved.
-     * 
+     *
      * @return True if the board is solved, false otherwise.
      */
     bool is_board_solved(std::vector<std::vector<Cell>> &board);
-
 };
 
 #endif // SOLVER_HPP

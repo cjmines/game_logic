@@ -2,6 +2,7 @@
 #include "game_logic.hpp"
 #include <ctime>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -42,15 +43,17 @@ std::pair<Board, int> read_board_from_file(const std::string &filename) {
 
 Board generate_board(int mines_count, int height, int width) {
 
-    // Seed the random number generator with the current time
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    std::random_device rd;  // Random device to seed the engine
+    std::mt19937 gen(rd()); // Mersenne Twister random number engine
+    std::uniform_int_distribution<> distrib_row(0, height - 1);
+    std::uniform_int_distribution<> distrib_col(0, width - 1);
 
     std::vector<std::vector<Cell>> board(height, std::vector<Cell>(width));
     int mines_placed = 0;
 
     while (mines_placed < mines_count) {
-        int row = std::rand() % board.size();
-        int col = std::rand() % board[0].size();
+        int row = distrib_row(gen);
+        int col = distrib_col(gen);
         if (!board[row][col].is_mine) {
             board[row][col].is_mine = true;
             mines_placed++;
