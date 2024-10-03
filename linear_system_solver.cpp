@@ -1,13 +1,13 @@
 #include "linear_system_solver.hpp"
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <ostream>
 #include <set>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
-
-using namespace std;
 
 void LinearEquation::normalize() { sort(variables.begin(), variables.end()); }
 
@@ -18,9 +18,9 @@ bool LinearEquation::operator<(const LinearEquation &other) const {
     return target_sum < other.target_sum;
 }
 
-vector<vector<int>> create_augmented_matrix(const set<LinearEquation> &equations, int num_variables) {
+std::vector<std::vector<int>> create_augmented_matrix(const std::set<LinearEquation> &equations, int num_variables) {
     int num_equations = equations.size();
-    vector<vector<int>> augmented_matrix(num_equations, vector<int>(num_variables + 1, 0));
+    std::vector<std::vector<int>> augmented_matrix(num_equations, std::vector<int>(num_variables + 1, 0));
 
     int row = 0;
     for (const auto &equation : equations) {
@@ -136,7 +136,7 @@ std::vector<std::vector<int>> equal_sum_expansion(const std::vector<std::vector<
     return expanded_matrix;
 }
 
-void gaussian_elimination(vector<vector<int>> &augmented_matrix, int num_variables, bool enable_logging) {
+void gaussian_elimination(std::vector<std::vector<int>> &augmented_matrix, int num_variables, bool enable_logging) {
     // Convert the integer matrix to a floating-point matrix
     std::vector<std::vector<float>> A(augmented_matrix.size(), std::vector<float>(augmented_matrix[0].size()));
 
@@ -212,16 +212,127 @@ void print_vector(const std::vector<int> &vec) {
     }
 }
 
-unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_matrix, int num_variables,
-                                         bool enable_logging) {
+void brute_force_deduction(const std::vector<int> &row, int constant,
+                           std::unordered_map<int, int> &var_name_to_deduced_value, bool enable_logging) {
 
-    unordered_map<int, int> var_name_to_deduced_value;
+    if (enable_logging) {
+        std::cout << " === starting brute force === " << std::endl;
+    }
+
+    std::vector<int> non_zero_indices;
+    int num_variables_ignoring_last_entry = row.size() - 1;
+
+    // modify the constant by considering already deduced variable values
+    for (int j = 0; j < num_variables_ignoring_last_entry; j++) {
+        if (row[j] != 0 && var_name_to_deduced_value.find(j) != var_name_to_deduced_value.end()) {
+            // subtract the contribution of the deduced variable
+            constant -= row[j] * var_name_to_deduced_value[j];
+        }
+    }
+    if (enable_logging) {
+        std::cout << "modified target sum: " << constant << std::endl;
+    }
+
+    // Identify variables with non-zero coefficients that haven't been deduced yet
+    for (int j = 0; j < num_variables_ignoring_last_entry; j++) {
+        if (row[j] != 0 && var_name_to_deduced_value.find(j) == var_name_to_deduced_value.end()) {
+            non_zero_indices.push_back(j);
+        }
+    }
+
+    if (enable_logging) {
+        std::cout << "varibles to be deduced with non-zero coef: ";
+        print_vector(non_zero_indices);
+        std::cout << std::endl;
+    }
+
+    int num_non_zero_vars = non_zero_indices.size();
+
+    // Brute-force search over all combinations of values for non-zero variables
+    int num_combinations = std::pow(2, num_non_zero_vars); // 2^num_non_zero_vars possibilities
+    std::unordered_map<int, int> unique_solution;          // Store the unique solution if found
+    bool solution_found = false;
+
+    if (enable_logging) {
+        std::cout << "about to start trying combinations of the values {0, 1} for the mentioned variables" << std::endl;
+    }
+
+    for (int combination = 0; combination < num_combinations; combination++) {
+        std::unordered_map<int, int> variable_values; // Store current combination of variable values
+        int sum = 0;
+
+        // Assign binary values based on the current combination
+        for (int i = 0; i < num_non_zero_vars; i++) {
+            int var_index = non_zero_indices[i];
+            int var_value = (combination >> i) & 1; // Get the i-th bit of combination (0 or 1)
+            variable_values[var_index] = var_value;
+
+            if (enable_logging) {
+                std::cout << "v" << var_index << " = " << var_value << ", ";
+            }
+
+            // Compute the contribution to the sum
+            sum += row[var_index] * var_value;
+        }
+
+        if (enable_logging) {
+            std::cout << "sum of vars: " << sum << " target sum is " << constant << std::endl;
+        }
+
+        // Check if the current combination satisfies the modified equation
+        if (sum == constant) {
+            if (!solution_found) {
+                // If this is the first solution, store it as the unique solution candidate
+                unique_solution = variable_values;
+                solution_found = true;
+            } else {
+                // if a second solution is found, we know the solution is not unique, so exit
+                if (enable_logging) {
+                    std::cout << "Multiple valid solutions found, no unique solution (brute force failed)."
+                              << std::endl;
+                }
+                return;
+            }
+        }
+    }
+
+    // if only one solution is found, deduce the variables
+    if (solution_found) {
+        if (enable_logging) {
+            std::cout << "Unique solution found: ";
+        }
+
+        // Assign the found solution to var_name_to_deduced_value
+        for (const auto &pair : unique_solution) {
+            bool value_not_yet_deduced = var_name_to_deduced_value.find(pair.first) == var_name_to_deduced_value.end();
+            if (value_not_yet_deduced) {
+                var_name_to_deduced_value[pair.first] = pair.second; // Deduce the value
+                if (enable_logging) {
+                    std::cout << "v" << pair.first << " = " << pair.second << " ";
+                }
+            }
+        }
+        if (enable_logging) {
+            std::cout << std::endl;
+        }
+    } else {
+        // If no solution is found
+        if (enable_logging) {
+            std::cout << "No solution found." << std::endl;
+        }
+    }
+}
+
+std::unordered_map<int, int> deduce_variables(const std::vector<std::vector<int>> &augmented_matrix, int num_variables,
+                                              bool enable_logging) {
+
+    std::unordered_map<int, int> var_name_to_deduced_value;
 
     int num_equations = augmented_matrix.size();
 
     // Logging to indicate the start of back substitution if enabled.
     if (enable_logging) {
-        cout << "Starting back substitution:" << endl;
+        std::cout << "Starting back substitution:" << std::endl;
     }
 
     // Iterate over each equation starting from the last one (back substitution).
@@ -232,9 +343,9 @@ unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_ma
         // Start with the sum on the right-hand side of the equation.
         int sum = row[num_variables];
         if (enable_logging) {
-            cout << "working on " << i << "th row of augmented matrix" << endl;
+            std::cout << "working on " << i << "th row of augmented matrix" << std::endl;
             print_vector(row);
-            cout << " sum = " << sum << endl;
+            std::cout << " sum = " << sum << std::endl;
         }
 
         // To track which variable might be deduced in this row.
@@ -243,7 +354,9 @@ unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_ma
         // To count the number of non-zero coefficients in the current equation.
         int non_zero_coeff_count = 0;
 
-        // Iterate through all the variables in the current equation.
+        if (enable_logging) {
+            std::cout << "analysing variables in row" << std::endl;
+        }
         for (int j = 0; j < num_variables; j++) {
             // If the coefficient is non-zero.
             int coefficient = row[j];
@@ -251,15 +364,15 @@ unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_ma
             if (coefficient_is_nonzero) {
                 non_zero_coeff_count++;
                 if (enable_logging) {
-                    cout << "Non-zero coefficient found at index " << j << ": " << coefficient << endl;
+                    std::cout << "Non-zero coefficient found at index " << j << ": " << coefficient << std::endl;
                 }
 
-                // Check if the current variable has not been deduced yet.
-                bool not_yet_deduced = var_name_to_deduced_value.find(j) == var_name_to_deduced_value.end();
-                if (not_yet_deduced) {
+                // check if the current variable has not been deduced yet.
+                bool variable_not_yet_deduced = var_name_to_deduced_value.find(j) == var_name_to_deduced_value.end();
+                if (variable_not_yet_deduced) {
                     variable_index = j; // Possible variable to deduce.
                     if (enable_logging) {
-                        cout << "Variable v" << j << " might be deduced" << endl;
+                        std::cout << "Variable v" << j << " will attempt to be deduced" << std::endl;
                     }
                 } else {
                     auto deduced_value = var_name_to_deduced_value[j];
@@ -267,8 +380,8 @@ unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_ma
                         // Subtracting from left and right side of the equation
                         sum -= coefficient * deduced_value;
                         if (enable_logging) {
-                            cout << "Subtracting " << coefficient * deduced_value << " from sum, new sum: " << sum
-                                 << endl;
+                            std::cout << "Variable v's value is known, subtracting " << coefficient * deduced_value
+                                      << " from sum, new sum: " << sum << std::endl;
                         }
                     }
                 }
@@ -284,20 +397,24 @@ unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_ma
         /*        if (row[j] != 0 && is_unassigned) {*/
         /*            var_name_to_deduced_value[j] = 0;*/
         /*            if (enable_logging) {*/
-        /*                cout << "Deduced variable v" << j << " = 0 by zero sum" << endl;*/
+        /*                std::cout << "Deduced variable v" << j << " = 0 by zero sum" << std::endl;*/
         /*            }*/
         /*        }*/
         /*    }*/
         /*}*/
 
+        bool deduced_something = false;
+
         // Special case: if the sum equals the number of non-zero coefficients, all
         // undetermined variables must be 1.
         if (sum == non_zero_coeff_count && non_zero_coeff_count >= 1) {
+            deduced_something = true;
             for (int j = 0; j < num_variables; j++) {
-                if (row[j] != 0 && var_name_to_deduced_value.find(j) == var_name_to_deduced_value.end()) {
+                bool value_not_yet_deduced = var_name_to_deduced_value.find(j) == var_name_to_deduced_value.end();
+                if (row[j] != 0 && value_not_yet_deduced) {
                     var_name_to_deduced_value[j] = 1;
                     if (enable_logging) {
-                        cout << "Deduced variable v" << j << " = 1 by equal sum" << endl;
+                        std::cout << "Deduced variable v" << j << " = 1 by equal sum" << std::endl;
                     }
                 }
             }
@@ -305,27 +422,29 @@ unordered_map<int, int> deduce_variables(const vector<vector<int>> &augmented_ma
 
         // If there's exactly one undetermined variable in this equation.
         if (non_zero_coeff_count == 1 && variable_index != -1) {
-            // Calculate the value of the undetermined variable by dividing the sum by
+            deduced_something = true;
+            // calculate the value of the undetermined variable by dividing the sum by
             // the coefficient.
             int deduced_value = sum / augmented_matrix[i][variable_index];
             if (enable_logging) {
-                cout << "Deduced value for variable v" << variable_index << " = " << deduced_value
-                     << " by row reduction isolation" << endl;
+                std::cout << "Deduced value for variable v" << variable_index << " = " << deduced_value
+                          << " by row reduction isolation" << std::endl;
             }
 
-            // Ensure the deduced value is binary (0 or 1).
             if (deduced_value == 0 || deduced_value == 1) {
                 // Store the deduced value in the map.
                 var_name_to_deduced_value[variable_index] = deduced_value;
                 if (enable_logging) {
-                    cout << "Deduced value for variable v" << variable_index << " = " << deduced_value
-                         << " by row reduction isolation" << endl;
+                    std::cout << "Deduced value for variable v" << variable_index << " = " << deduced_value
+                              << " by row reduction isolation" << std::endl;
                 }
             } else if (enable_logging) {
-                cout << "Deduced value for variable v" << variable_index
-                     << " is not binary, it has value: " << deduced_value << " skipping" << endl;
+                std::cout << "Deduced value for variable v" << variable_index
+                          << " is not binary, it has value: " << deduced_value << " skipping" << std::endl;
             }
         }
+
+        brute_force_deduction(row, sum, var_name_to_deduced_value, enable_logging);
     }
 
     // Return the map containing the deduced variable values.
