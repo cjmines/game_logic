@@ -7,37 +7,124 @@
 #include <stdexcept>
 #include <string>
 
-// Function to read the Minesweeper board from a file
+#define STB_IMAGE_IMPLEMENTATION // Define this in one source file
+#include "stb_image.h"
+
+Board construct_board_from_mine_bools(const std::vector<std::vector<bool>> &mines) {
+    Board board(mines.size(), std::vector<Cell>(mines[0].size()));
+
+    // Populate the board based on mine positions
+    for (size_t row = 0; row < mines.size(); ++row) {
+        for (size_t col = 0; col < mines[0].size(); ++col) {
+            board[row][col].is_mine = mines[row][col];
+        }
+    }
+
+    // Now compute the adjacent mine counts for each cell
+    int rows = board.size();
+    int cols = board[0].size();
+    std::vector<std::pair<int, int>> directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
+                                                   {0, 1},   {1, -1}, {1, 0},  {1, 1}};
+
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            if (!board[row][col].is_mine) {
+                int adjacent_mines = 0;
+                for (const auto &[dx, dy] : directions) {
+                    int new_row = row + dx;
+                    int new_col = col + dy;
+                    if (new_row >= 0 && new_row < rows && new_col >= 0 && new_col < cols) {
+                        if (board[new_row][new_col].is_mine) {
+                            adjacent_mines++;
+                        }
+                    }
+                }
+                board[row][col].adjacent_mines = adjacent_mines;
+            }
+        }
+    }
+
+    return board;
+}
+
+// Function to read the board from a text file
 std::pair<Board, int> read_board_from_file(const std::string &filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file");
     }
 
-    std::vector<std::vector<Cell>> board;
+    std::vector<std::vector<bool>> mines;
     std::string line;
-
     int mine_count = 0;
 
+    // Read the board layout from the file
     while (std::getline(file, line)) {
-        std::vector<Cell> row;
-        std::istringstream iss(line);
-        std::string value;
-
-        while (iss >> value) {
-            Cell cell;
-            if (value == "M") {
-                cell.is_mine = true;
-                mine_count += 1;
-            } else {
-                cell.adjacent_mines = std::stoi(value);
+        std::vector<bool> row;
+        for (char c : line) {
+            // Skip spaces
+            if (c == ' ') {
+                continue;
             }
-            row.push_back(cell);
+
+            bool is_mine = (c == 'M');
+            row.push_back(is_mine);
+            if (is_mine) {
+                mine_count += 1;
+            }
         }
-        board.push_back(row);
+
+        // Only add non-empty rows to the mines matrix
+        if (!row.empty()) {
+            mines.push_back(row);
+        }
     }
 
     file.close();
+    // Construct the board from the mines matrix
+    Board board = construct_board_from_mine_bools(mines);
+    return {board, mine_count};
+}
+
+// Function to read the board from a PNG image file
+std::pair<Board, int> read_board_from_image_file(const std::string &filename) {
+    // Load the image
+    int width, height, channels;
+    unsigned char *image = stbi_load(filename.c_str(), &width, &height, &channels, 0);
+    if (!image) {
+        throw std::runtime_error("Failed to load image");
+    }
+
+    std::vector<std::vector<bool>> mines(height, std::vector<bool>(width));
+    int mine_count = 0;
+    int black_threshold = 50;
+
+    // Process the image to determine mine positions
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            // Assuming the image is in RGB format
+            int pixel_index = (y * width + x) * channels;
+            unsigned char r = image[pixel_index];
+            unsigned char g = image[pixel_index + 1];
+            unsigned char b = image[pixel_index + 2];
+
+            if (r == 0) {
+                int grabme = 0;
+            }
+
+            // Check if the pixel is black (mine) or white (no mine)
+            if (r < black_threshold && g < black_threshold && b < black_threshold) {
+                mines[y][x] = true; // It's a mine
+                mine_count++;
+            } else {
+                mines[y][x] = false; // No mine
+            }
+        }
+    }
+
+    stbi_image_free(image);
+    // Construct the board from the mines matrix
+    Board board = construct_board_from_mine_bools(mines);
     return {board, mine_count};
 }
 

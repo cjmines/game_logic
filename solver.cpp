@@ -16,7 +16,7 @@ std::set<LinearEquation> Solver::generate_linear_equations(std::vector<std::vect
              * 211#
              * F11#
              */
-            if (cell.is_revealed && !cell.is_flagged) {
+            if (cell.is_revealed && !cell.is_flagged && cell.adjacent_mines >= 1) {
                 LinearEquation eq;
                 eq.target_sum = board[r][c].adjacent_mines;
 
@@ -54,7 +54,7 @@ void Solver::update_board(std::vector<std::vector<Cell>> &board, const std::unor
             board[row][col].is_flagged = true;
         } else if (value == 0) {
             reveal_cell(board, row, col);
-            // board[row][col].is_revealed = true;
+            /*board[row][col].is_revealed = true;*/
         }
     }
 }
@@ -173,19 +173,33 @@ std::optional<std::pair<int, int>> Solver::solve(std::vector<std::vector<Cell>> 
 
         bool cant_make_progress = false;
 
+        bool logging = false;
+
         while (not cant_make_progress) {
             auto equations = generate_linear_equations(work_board, mine_count);
             auto augmented_matrix = create_augmented_matrix(equations, work_board.size() * work_board[0].size());
+            auto expanded_augmented_matrix = equal_sum_expansion(augmented_matrix);
+            expanded_augmented_matrix = zero_sum_expansion(expanded_augmented_matrix);
+            /*auto zeroed_out_matrix = zero_out_columns_based_on_rightmost(augmented_matrix);*/
+            /*auto equal_sum_expanded_matrix = equal_sum_expansion(augmented_matrix);*/
+            /*auto equal_sum_expanded_matrix = augmented_matrix;*/
 
-            /* print_matrix(augmented_matrix); */
+            if (logging) {
+                std::cout << "augmented matrix" << std::endl;
+                print_matrix(augmented_matrix);
+                std::cout << "expanded matrix" << std::endl;
+                print_matrix(expanded_augmented_matrix);
+            }
 
-            gaussian_elimination(augmented_matrix, work_board.size() * work_board[0].size());
+            gaussian_elimination(expanded_augmented_matrix, work_board.size() * work_board[0].size());
 
-            /* std::cout << "after gaussian elimination" << std::endl; */
+            if (logging) {
+                std::cout << "after gaussian elimination" << std::endl;
+                print_matrix(expanded_augmented_matrix);
+            }
 
-            /* print_matrix(augmented_matrix); */
-
-            auto deduced_vars = deduce_variables(augmented_matrix, work_board.size() * work_board[0].size());
+            auto deduced_vars =
+                deduce_variables(expanded_augmented_matrix, work_board.size() * work_board[0].size(), logging);
 
             if (deduced_vars.empty()) {
                 std::cerr << "No variables could be deduced. Trying a new cell..." << std::endl;

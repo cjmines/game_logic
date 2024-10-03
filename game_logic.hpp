@@ -11,23 +11,22 @@
 enum class Direction { up, down, left, right };
 
 struct Cell {
-  bool is_mine = false;     ///< Indicates if the cell contains a mine.
-  bool is_revealed = false; ///< Indicates if the cell has been revealed.
-  bool is_flagged = false;  ///< Indicates if the cell is flagged.
-  bool safe_start = false;  ///< For no guess games, the place for a user to
-                            ///< safely start a game.
-  int adjacent_mines = 0;   ///< Number of adjacent mines.
+    bool is_mine = false;     ///< Indicates if the cell contains a mine.
+    bool is_revealed = false; ///< Indicates if the cell has been revealed.
+    bool is_flagged = false;  ///< Indicates if the cell is flagged.
+    bool safe_start = false;  ///< For no guess games, the place for a user to
+                              ///< safely start a game.
+    int adjacent_mines = 0;   ///< Number of adjacent mines.
 };
-
 
 using Board = std::vector<std::vector<Cell>>;
 
 /**
  * @brief Reads a Minesweeper board from a file and generates a 2D vector of Cell objects.
  *
- * This function reads the board from the given file, where each cell is represented by either 
- * a number (indicating the count of adjacent mines) or the letter "M" (indicating a mine). 
- * The function then constructs a 2D vector of `Cell` objects, where each `Cell` is initialized 
+ * This function reads the board from the given file, where each cell is represented by either
+ * a number (indicating the count of adjacent mines) or the letter "M" (indicating a mine).
+ * The function then constructs a 2D vector of `Cell` objects, where each `Cell` is initialized
  * according to the contents of the file.
  *
  * @param filename The path to the file containing the Minesweeper board.
@@ -47,7 +46,7 @@ using Board = std::vector<std::vector<Cell>>;
  * std::vector<std::vector<Cell>> board = read_board_from_file("minesweeper_board.txt");
  * @endcode
  */
-std::pair<Board, int> read_board_from_file(const std::string& filename);
+std::pair<Board, int> read_board_from_file(const std::string &filename);
 
 /**
  * @brief Initializes the Minesweeper board with mines and adjacent mine
@@ -58,9 +57,9 @@ std::pair<Board, int> read_board_from_file(const std::string& filename);
  */
 Board generate_board(int mines_count, int height, int width);
 
+Board construct_board_from_mine_bools(const std::vector<std::vector<bool>> &mines);
 
-
-
+std::pair<Board, int> read_board_from_image_file(const std::string &filename);
 
 /**
  * @brief Reveals a cell on the Minesweeper board recursively.
@@ -86,8 +85,7 @@ bool reveal_cell(std::vector<std::vector<Cell>> &board, int row, int col);
  * @param row Row index of the center cell.
  * @param col Column index of the center cell.
  */
-bool reveal_adjacent_cells(std::vector<std::vector<Cell>> &board, int row,
-                           int col);
+bool reveal_adjacent_cells(std::vector<std::vector<Cell>> &board, int row, int col);
 
 /**
  * @brief Flags or unflags a cell on the Minesweeper board.
@@ -113,13 +111,11 @@ void flag_cell(std::vector<std::vector<Cell>> &board, int row, int col);
  * @param row Row index of the center cell.
  * @param col Column index of the center cell.
  */
-void flag_adjacent_cells(std::vector<std::vector<Cell>> &board, int row,
-                         int col); 
+void flag_adjacent_cells(std::vector<std::vector<Cell>> &board, int row, int col);
 /**
  * @brief If the minefield has successfully been cleared
  */
-bool field_clear(std::vector<std::vector<Cell>> &board); 
+bool field_clear(std::vector<std::vector<Cell>> &board);
 using KeyMap = std::unordered_map<Direction, int>;
 
-
-#endif //GAME_LOGIC_HPP
+#endif // GAME_LOGIC_HPP
