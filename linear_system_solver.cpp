@@ -212,7 +212,8 @@ void print_vector(const std::vector<int> &vec) {
     }
 }
 
-void brute_force_deduction(const std::vector<int> &row, int constant,
+// note that target sum already accounts for known variables
+void brute_force_deduction(const std::vector<int> &row, int target_sum,
                            std::unordered_map<int, int> &var_name_to_deduced_value, bool enable_logging) {
 
     if (enable_logging) {
@@ -221,17 +222,6 @@ void brute_force_deduction(const std::vector<int> &row, int constant,
 
     std::vector<int> non_zero_indices;
     int num_variables_ignoring_last_entry = row.size() - 1;
-
-    // modify the constant by considering already deduced variable values
-    for (int j = 0; j < num_variables_ignoring_last_entry; j++) {
-        if (row[j] != 0 && var_name_to_deduced_value.find(j) != var_name_to_deduced_value.end()) {
-            // subtract the contribution of the deduced variable
-            constant -= row[j] * var_name_to_deduced_value[j];
-        }
-    }
-    if (enable_logging) {
-        std::cout << "modified target sum: " << constant << std::endl;
-    }
 
     // Identify variables with non-zero coefficients that haven't been deduced yet
     for (int j = 0; j < num_variables_ignoring_last_entry; j++) {
@@ -276,11 +266,11 @@ void brute_force_deduction(const std::vector<int> &row, int constant,
         }
 
         if (enable_logging) {
-            std::cout << "sum of vars: " << sum << " target sum is " << constant << std::endl;
+            std::cout << "sum of vars: " << sum << " target sum is " << target_sum << std::endl;
         }
 
         // Check if the current combination satisfies the modified equation
-        if (sum == constant) {
+        if (sum == target_sum) {
             if (!solution_found) {
                 // If this is the first solution, store it as the unique solution candidate
                 unique_solution = variable_values;

@@ -231,7 +231,7 @@ void print_board(std::vector<std::vector<Cell>> &board) {
                     std::cout << cell.adjacent_mines;
                 }
             } else if (cell.is_flagged) {
-                std::cout << 'F';
+                std::cout << '@';
             } else {
                 std::cout << '#';
             }
