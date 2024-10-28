@@ -7,7 +7,6 @@
 #include <stdexcept>
 #include <string>
 
-#define STB_IMAGE_IMPLEMENTATION // Define this in one source file
 #include "stb_image.h"
 
 Board construct_board_from_mine_bools(const std::vector<std::vector<bool>> &mines) {
