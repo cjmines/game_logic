@@ -233,18 +233,18 @@ void toggle_flag_cell(std::vector<std::vector<Cell>> &board, int row, int col) {
     }
 }
 
-void flag_cell(std::vector<std::vector<Cell>> &board, int row, int col) {
+void set_cell_flag(std::vector<std::vector<Cell>> &board, int row, int col, bool flag_value) {
     if (row >= 0 && row < board.size() && col >= 0 && col < board[0].size() && !board[row][col].is_revealed) {
-        board[row][col].is_flagged = true;
+        board[row][col].is_flagged = flag_value;
     }
 }
 
-void flag_adjacent_cells(std::vector<std::vector<Cell>> &board, int row, int col) {
+void set_adjacent_cells_flags(std::vector<std::vector<Cell>> &board, int row, int col, bool flag_value) {
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
             int r = row + i;
             int c = col + j;
-            flag_cell(board, r, c);
+            set_cell_flag(board, r, c, flag_value);
         }
     }
 }

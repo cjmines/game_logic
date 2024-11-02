@@ -96,22 +96,23 @@ bool reveal_adjacent_cells(std::vector<std::vector<Cell>> &board, int row, int c
  */
 void toggle_flag_cell(std::vector<std::vector<Cell>> &board, int row, int col);
 /**
- * @brief Flags a cell on the Minesweeper board.
+ * @brief Set the flag a cell on the Minesweeper board.
  *
  * @param board 2D vector representing the Minesweeper board.
  * @param row Row index of the cell to flag
  * @param col Column index of the cell to flag
  */
-void flag_cell(std::vector<std::vector<Cell>> &board, int row, int col);
+void set_cell_flag(std::vector<std::vector<Cell>> &board, int row, int col, bool flag_value);
 
 /**
- * @brief Flags all adjacent cells of a specified cell on the Minesweeper board.
+ * @brief Set the flag for all adjacent cells of a specified cell on the Minesweeper board.
  *
  * @param board 2D vector representing the Minesweeper board.
  * @param row Row index of the center cell.
  * @param col Column index of the center cell.
  */
-void flag_adjacent_cells(std::vector<std::vector<Cell>> &board, int row, int col);
+void set_adjacent_cells_flags(std::vector<std::vector<Cell>> &board, int row, int col, bool flag_value);
+
 /**
  * @brief If the minefield has successfully been cleared
  */
